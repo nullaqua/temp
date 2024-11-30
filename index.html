@@ -1,0 +1,600 @@
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>答题系统</title>
+    <link rel="icon" type="image/png" href="https://youthwrite.subit.org.cn/api/terminal/icon">
+
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            overflow: auto;
+            position: relative;
+        }
+        .background {
+            position: fixed; /* 固定背景 */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('https://inews.gtimg.com/newsapp_bt/0/13536215044/1000');
+            background-size: cover;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.5; /* 设置背景透明度 */
+        }
+        #raw {
+            position: absolute; /* 绝对定位 */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1; /* 确保内容在背景之上 */
+            color: #fff; /* 设置文本颜色 */
+            text-align: center;
+            padding: 20px;
+            backdrop-filter: blur(2px); /* 可选：增加模糊效果 */
+            overflow: auto;
+        }
+
+        #start {
+            /* 居中 */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+            block-size: 60px;
+            border-radius: 20px;
+            /*文字居中*/
+            text-align: center;
+        }
+        @media (orientation: portrait) {
+            #start {
+                height: 18vw;
+                width: 40vw;
+                font-size: 7vw;
+                border-radius: 7vw;
+            }
+        }
+
+        .btn {
+            /*蓝色圆角矩形*/
+            background-color: #0171D3;
+            border: none;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            border-radius: 12px;
+            padding: 10px 24px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        @media (orientation: portrait) {
+            .btn {
+                height: 6vw;
+                width: 10vw;
+                font-size: 4vw;
+                box-shadow: 0 0 1vw rgba(0, 0, 0, 0.5);
+                border-radius: 2vw;
+            }
+        }
+
+        #main-content {
+            /*白色圆角矩形*/
+            position: absolute;
+            background-color: #FFFFFF;
+            border: none;
+            color: black;
+            text-align: center;
+            text-decoration: none;
+            display: inline;
+            font-size: 16px;
+            top: 10px;
+            bottom: 10px;
+            border-radius: 12px;
+            padding: 10px 24px;
+            transform: translate(-50%, 0);
+            box-sizing: border-box;
+            overflow: auto;
+            scrollbar-width: none;
+            width: max(60%, 600px);
+            left: 45%;
+        }
+
+        #question-list {
+            position: fixed;
+            background-color: #FFFFFF;
+            border: none;
+            color: black;
+            text-align: center;
+            text-decoration: none;
+            font-size: 16px;
+            top: 10px;
+            border-radius: 12px;
+            padding: 10px 24px;
+            left: calc(max(60%, 600px) / 2 + 10px + 45%);
+            overflow: auto;
+            width: 250px;
+            display: inline;
+            box-sizing: border-box;
+            z-index: 1;
+        }
+        @media (orientation: portrait) {
+            #main-content {
+                left: 50%;
+                width: calc(100% - 20px);
+            }
+            #question-list {
+                display: none;
+            }
+        }
+        @media (max-width: 1060px) {
+            #main-content {
+                left: 50%;
+                width: calc(100% - 20px);
+            }
+            #question-list {
+                display: none;
+            }
+        }
+
+        .question-list-row {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+
+        .unset {
+            /* 未选择 */
+            background-color: #DEDEDE;
+            color: black;
+            margin: 3px 3px;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            text-align: center; /* 水平居中 */
+            line-height: 40px; /* 使文本垂直居中（可选） */
+        }
+
+        .set {
+            /* 已选择 */
+            background-color: #0171D3;
+            color: white;
+            margin: 3px 3px;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            line-height: 40px; /* 使文本垂直居中（可选） */
+        }
+
+        .question {
+            /* 左对齐 */
+            text-align: left;
+            margin: 20px 30px;
+        }
+
+        .op {
+            width: 30px;
+            display: inline;
+            margin-right: 20px;
+            font-weight: bold;
+        }
+
+        .op-content {
+            left: 30px;
+            display: inline;
+            font-weight: normal;
+        }
+
+        .unchecked-s {
+            background-color: #DEDEDE;
+            color: black;
+            padding: 10px 24px;
+            border-radius: 12px;
+            margin: 10px 0;
+        }
+
+        .checked-s {
+            background-color: #0171D3;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 12px;
+            margin: 10px 0;
+        }
+
+        .right {
+            background-color: rgba(0, 255, 0, 0.3);
+            color: black;
+        }
+        .wrong {
+            background-color: rgba(255, 0, 0, 0.3);
+            color: black;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="raw">
+        <button id = 'start' class = 'btn'>
+            开始答题
+        </button>
+    </div>
+    <div class="background"></div>
+<script>
+    let rawQs = [
+        {
+            "content": "Test 1 : Exploring ____ space is exciting, yet dangerous. There is ____ need for both robots and humans for space exploration.",
+            "options": {
+                "A": "The；a",
+                "B": "a； a",
+                "C": "/；a",
+                "D": "/；the"
+            },
+            "answer": "A",
+            "analyze": "This is 1’s analyze"
+        },
+        {
+            "content": "Test 2 : Exploring ____ space is exciting, yet dangerous. There is ____ need for both robots and humans for space exploration.",
+            "options": {
+                "A": "The；a",
+                "B": "a； a",
+                "C": "/；a",
+                "D": "/；the"
+            },
+            "answer": "B",
+            "analyze": "This is 2’s analyze"
+        },
+        {
+            "content": "Test 3 : Exploring ____ space is exciting, yet dangerous. There is ____ need for both robots and humans for space exploration.",
+            "options": {
+                "A": "The；a",
+                "B": "a； a",
+                "C": "/；a",
+                "D": "/；the"
+            },
+            "answer": "C",
+            "analyze": "This is 3’s analyze"
+        },
+        {
+            "content": "Test 4 : Exploring ____ space is exciting, yet dangerous. There is ____ need for both robots and humans for space exploration.",
+            "options": {
+                "A": "The；a",
+                "B": "a； a",
+                "C": "/；a",
+                "D": "/；the"
+            },
+            "answer": "D",
+            "analyze": "This is 4’s analyze"
+        },
+        {
+            "content": "Test 5 : Exploring ____ space is exciting, yet dangerous. There is ____ need for both robots and humans for space exploration.",
+            "options": {
+                "A": "The；a",
+                "B": "a； a",
+                "C": "/；a",
+                "D": "/；the"
+            },
+            "answer": "A",
+            "analyze": "This is 5’s analyze"
+        },
+        {
+            "content": "Test 6 : Exploring ____ space is exciting, yet dangerous. There is ____ need for both robots and humans for space exploration.",
+            "options": {
+                "A": "The；a",
+                "B": "a； a",
+                "C": "/；a",
+                "D": "/；the"
+            },
+            "answer": "B",
+            "analyze": "This is 6’s analyze"
+        },
+        {
+            "content": "Test 7 : Exploring ____ space is exciting, yet dangerous. There is ____ need for both robots and humans for space exploration.",
+            "options": {
+                "A": "The；a",
+                "B": "a； a",
+                "C": "/；a",
+                "D": "/；the"
+            },
+            "answer": "C",
+            "analyze": "This is 7’s analyze"
+        },
+        {
+            "content": "Test 8 : Exploring ____ space is exciting, yet dangerous. There is ____ need for both robots and humans for space exploration.",
+            "options": {
+                "A": "The；a",
+                "B": "a； a",
+                "C": "/；a",
+                "D": "/；the"
+            },
+            "answer": "D",
+            "analyze": "This is 8’s analyze"
+        },
+        {
+            "content": "Test 9 : Exploring ____ space is exciting, yet dangerous. There is ____ need for both robots and humans for space exploration.",
+            "options": {
+                "A": "The；a",
+                "B": "a； a",
+                "C": "/；a",
+                "D": "/；the"
+            },
+            "answer": "A",
+            "analyze": "This is 9’s analyze"
+        },
+        {
+            "content": "Test 10 : Exploring ____ space is exciting, yet dangerous. There is ____ need for both robots and humans for space exploration.",
+            "options": {
+                "A": "The；a",
+                "B": "a； a",
+                "C": "/；a",
+                "D": "/；the"
+            },
+            "answer": "B",
+            "analyze": "This is 10’s analyze"
+        },
+        {
+            "content": "Test 11 : Exploring ____ space is exciting, yet dangerous. There is ____ need for both robots and humans for space exploration.",
+            "options": {
+                "A": "The；a",
+                "B": "a； a",
+                "C": "/；a",
+                "D": "/；the"
+            },
+            "answer": "C",
+            "analyze": "This is 11’s analyze"
+        },
+        {
+            "content": "Test 12 : Exploring ____ space is exciting, yet dangerous. There is ____ need for both robots and humans for space exploration.",
+            "options": {
+                "A": "The；a",
+                "B": "a； a",
+                "C": "/；a",
+                "D": "/；the"
+            },
+            "answer": "D",
+            "analyze": "This is 12’s analyze"
+        },
+        {
+            "content": "Test 13 : Exploring ____ space is exciting, yet dangerous. There is ____ need for both robots and humans for space exploration.",
+            "options": {
+                "A": "The；a",
+                "B": "a； a",
+                "C": "/；a",
+                "D": "/；the"
+            },
+            "answer": "A",
+            "analyze": "This is 13’s analyze"
+        },
+        {
+            "content": "Test 14 : Exploring ____ space is exciting, yet dangerous. There is ____ need for both robots and humans for space exploration.",
+            "options": {
+                "A": "The；a",
+                "B": "a； a",
+                "C": "/；a",
+                "D": "/；the"
+            },
+            "answer": "B",
+            "analyze": "This is 14’s analyze"
+        },
+        {
+            "content": "Test 15 : Exploring ____ space is exciting, yet dangerous. There is ____ need for both robots and humans for space exploration.",
+            "options": {
+                "A": "The；a",
+                "B": "a； a",
+                "C": "/；a",
+                "D": "/；the"
+            },
+            "answer": "C",
+            "analyze": "This is 15’s analyze"
+        },
+        {
+            "content": "Test 16 : Exploring ____ space is exciting, yet dangerous. There is ____ need for both robots and humans for space exploration.",
+            "options": {
+                "A": "The；a",
+                "B": "a； a",
+                "C": "/；a",
+                "D": "/；the"
+            },
+            "answer": "D",
+            "analyze": "This is 16’s analyze"
+        },
+        {
+            "content": "Test 17 : Exploring ____ space is exciting, yet dangerous. There is ____ need for both robots and humans for space exploration.",
+            "options": {
+                "A": "The；a",
+                "B": "a； a",
+                "C": "/；a",
+                "D": "/；the"
+            },
+            "answer": "A",
+            "analyze": "This is 17’s analyze"
+        },
+        {
+            "content": "Test 18 : Exploring ____ space is exciting, yet dangerous. There is ____ need for both robots and humans for space exploration.",
+            "options": {
+                "A": "The；a",
+                "B": "a； a",
+                "C": "/；a",
+                "D": "/；the"
+            },
+            "answer": "B",
+            "analyze": "This is 18’s analyze"
+        },
+        {
+            "content": "Test 19 : Exploring ____ space is exciting, yet dangerous. There is ____ need for both robots and humans for space exploration.",
+            "options": {
+                "A": "The；a",
+                "B": "a； a",
+                "C": "/；a",
+                "D": "/；the"
+            },
+            "answer": "C",
+            "analyze": "This is 19’s analyze"
+        },
+        {
+            "content": "Test 20 : Exploring ____ space is exciting, yet dangerous. There is ____ need for both robots and humans for space exploration.",
+            "options": {
+                "A": "The；a",
+                "B": "a； a",
+                "C": "/；a",
+                "D": "/；the"
+            },
+            "answer": "D",
+            "analyze": "This is 20’s analyze"
+        }
+    ]
+
+    rawQs.sort(function(){return Math.random() > 0.5 ? -1 : 1});
+
+    let start = document.getElementById('start');
+    start.onclick = function()
+    {
+        start.remove();
+        let selections = [];
+        let canSelect = true;
+        let content = document.createElement('div');
+        content.id = 'main-content';
+        let questionList = document.createElement('div');
+        questionList.id = 'question-list';
+        document.getElementById('raw').appendChild(content);
+        document.body.appendChild(questionList);
+        let count = Math.min(5, rawQs.length);
+        while (selections.length < count) selections.push('');
+        let qs = rawQs.slice(0, count);
+        function updateUI()
+        {
+            for (let i = 0; i < count; i++)
+            {
+                for (let key in qs[i].options)
+                {
+                    let s = document.getElementById('s' + i + '_' + key);
+                    if (key === selections[i])
+                    {
+                        s.className = 'checked-s';
+                    }
+                    else
+                    {
+                        s.className = 'unchecked-s';
+                    }
+                }
+                if (selections[i] === '')
+                {
+                    document.getElementById('q-icon' + i).className = 'unset';
+                }
+                else
+                {
+                    document.getElementById('q-icon' + i).className = 'set';
+                }
+            }
+        }
+        for(let i = 0; i < count; i++)
+        {
+            let q = qs[i];
+            let div = document.createElement('div');
+            div.id = 'q' + i;
+            div.className = 'question';
+            div.innerHTML = '<h3 id = "title'+ i +'"> 题目' + (i + 1) + '</h3>';
+            div.innerHTML += '<div>' + q.content + '</div>';
+            for(let key in q.options)
+            {
+                let s = document.createElement('div');
+                s.className = 'unchecked-s';
+                s.id = 's' + i + '_' + key;
+                div.appendChild(s);
+                s.onclick = function()
+                {
+                    if (canSelect)
+                    {
+                        selections[i] = key;
+                        updateUI();
+                    }
+                }
+                s.innerHTML += '<div class="op">' + key + '.</div>';
+                s.innerHTML += '<div class="op-content">' + q.options[key] + '</div>';
+            }
+            content.appendChild(div);
+
+            let row;
+            if (i%4 === 0)
+            {
+                row = document.createElement('div');
+                row.className = 'question-list-row';
+                questionList.appendChild(row);
+            }
+            else
+            {
+                row = questionList.lastChild;
+            }
+            let icon = document.createElement('div');
+            icon.id = 'q-icon' + i;
+            icon.className = 'unset';
+            icon.innerHTML = '' + (i + 1);
+            icon.onclick = function()
+            {
+                document.getElementById('q' + i).scrollIntoView({behavior: "smooth"});
+            }
+            row.appendChild(icon);
+        }
+        let submit = document.createElement('div');
+        submit.className = 'btn';
+        submit.innerHTML = '提交';
+        submit.onclick = function()
+        {
+            let score = 0;
+            for(let i = 0; i < count; i++)
+            {
+                if (selections[i] === '')
+                {
+                    alert('请完成所有题目后再提交');
+                    document.getElementById('title' + i).scrollIntoView({behavior: "smooth"});
+                    return;
+                }
+                if(selections[i] === qs[i].answer)
+                {
+                    score++;
+                }
+            }
+            canSelect = false;
+            // create a new element in the content to show the score.
+            let scoreDiv = document.createElement('div');
+            scoreDiv.innerHTML = '<h3>得分：' + score + '/' + count + '</h3>';
+            content.appendChild(scoreDiv);
+            for (let i = 0; i < count; i++)
+            {
+                let div = document.getElementById('q' + i);
+                div.innerHTML += '<div>正确答案：' + qs[i].answer + '</div>';
+                if (selections[i] !== qs[i].answer)
+                {
+                    document.getElementById('q-icon' + i).className = 'set wrong';
+                    div.innerHTML += '<div style="color:red">你的答案：' + selections[i] + '</div>';
+                }
+                else
+                {
+                    document.getElementById('q-icon' + i).className = 'set right';
+                    div.innerHTML += '<div style="color:green">你的答案：' + selections[i] + '</div>';
+                }
+                div.innerHTML += '<div>解析：' + qs[i].analyze + '</div>';
+                let wrongAnswer = document.getElementById('s' + i + '_' + selections[i]);
+                wrongAnswer.className = 'checked-s wrong';
+                let rightAnswer = document.getElementById('s' + i + '_' + qs[i].answer);
+                rightAnswer.className = 'checked-s right';
+            }
+            submit.remove();
+            content.appendChild(submit);
+            submit.innerHTML = 'Retry';
+            submit.onclick = function ()
+            {
+                window.location.reload();
+            }
+        }
+        content.appendChild(submit);
+    }
+
+</script>
+</body>
+</html>
